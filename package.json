@@ -1,0 +1,42 @@
+{
+  "name": "finance-dashboard-backend",
+  "version": "1.0.0",
+  "description": "Backend API for a multi-tenant finance dashboard using Node, Express, and sqlite3.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file=.env src/server.js",
+    "dev": "nodemon --env-file=.env src/server.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js",
+    "setup": "npm run migrate && npm run seed",
+    "lint": "eslint .",
+    "test-e2e": "mocha \"tests/e2e/**/*.spec.js\" --timeout 20000",
+    "test-e2e-cov": "nyc --reporter=text npm run test-e2e"
+  },
+  "author": "Pravin K K",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "@e965/xlsx": "^0.20.3",
+    "@eslint/js": "^10.0.1",
+    "chai": "^6.2.2",
+    "eslint": "^10.2.0",
+    "globals": "^17.4.0",
+    "mocha": "^11.7.5",
+    "morgan": "^1.10.1",
+    "nodemon": "^3.1.14",
+    "nyc": "^18.0.0",
+    "supertest": "^7.2.2"
+  },
+  "engines": {
+    "node": "^24.14.1"
+  }
+}
