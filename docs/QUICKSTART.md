@@ -2,7 +2,7 @@
 1. Run `nvm use` for installing or selecting (if already available) node version v24.14.1
 2. Run `npm install` to install dependencies.
 3. Run `npm run setup` to create database, tables and seed the tables with data.
-4. Run `npm run tests-e2e` to test everything is working.
+4. Run `npm run test-e2e` to test everything is working.
 5. Run `npm run dev` to start the server.
 6. Call the `POST /api/v1/auth/login` endpoint with username and password to get the JWT token.
 The following users are seeded in db:
