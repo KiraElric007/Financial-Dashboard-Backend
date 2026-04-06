@@ -1,0 +1,727 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Finance Dashboard Backend API",
+    "version": "1.0.0",
+    "description": "Backend API for a multi-tenant finance dashboard (Node + Express + sqlite3)."
+  },
+  "servers": [
+    { "url": "http://localhost:3000/api/v1" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "organizationId": { "type": "integer" },
+          "email": { "type": "string", "format": "email" },
+          "fullName": { "type": "string" },
+          "isActive": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "organizationId", "email", "fullName", "isActive"]
+      },
+      "UserCreate": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "fullName": { "type": "string" },
+          "password": { "type": "string", "format": "password" },
+          "isActive": { "type": "boolean" }
+        },
+        "required": ["email", "fullName", "password"]
+      },
+      "UserUpdate": {
+        "type": "object",
+        "properties": {
+          "fullName": { "type": "string" },
+          "password": { "type": "string", "format": "password" },
+          "isActive": { "type": "boolean" }
+        }
+      },
+      "AuthLoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password" }
+        },
+        "required": ["email", "password"]
+      },
+      "AuthLoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/User" }
+        },
+        "required": ["token", "user"]
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "code": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "code"]
+      },
+      "OrganizationUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "code": { "type": "string" }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "organizationId": { "type": "integer" },
+          "accountNumber": { "type": "string" },
+          "name": { "type": "string" },
+          "accountType": { "type": "string" },
+          "currency": { "type": "string" }
+        },
+        "required": ["id", "organizationId", "accountNumber", "name", "accountType", "currency"]
+      },
+      "AccountCreate": {
+        "type": "object",
+        "properties": {
+          "accountNumber": { "type": "string" },
+          "name": { "type": "string" },
+          "accountType": { "type": "string" },
+          "currency": { "type": "string" }
+        },
+        "required": ["accountNumber", "name", "accountType", "currency"]
+      },
+      "AccountUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "accountType": { "type": "string" },
+          "currency": { "type": "string" }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "organizationId": { "type": "integer" },
+          "txnDate": { "type": "string", "format": "date-time" },
+          "accountId": { "type": "integer" },
+          "departmentId": { "type": "integer", "nullable": true },
+          "costCenterId": { "type": "integer", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "debitAmount": { "type": "number", "format": "float" },
+          "creditAmount": { "type": "number", "format": "float" },
+          "currency": { "type": "string" },
+          "status": { "type": "string" },
+          "createdBy": { "type": "integer", "nullable": true },
+          "approvedBy": { "type": "integer", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "approvedAt": { "type": "string", "format": "date-time", "nullable": true }
+        },
+        "required": ["id", "organizationId", "txnDate", "accountId", "debitAmount", "creditAmount", "currency", "status"]
+      },
+      "TransactionCreate": {
+        "type": "object",
+        "properties": {
+          "txnDate": { "type": "string", "format": "date-time" },
+          "accountId": { "type": "integer" },
+          "departmentId": { "type": "integer", "nullable": true },
+          "costCenterId": { "type": "integer", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "debitAmount": { "type": "number", "format": "float" },
+          "creditAmount": { "type": "number", "format": "float" },
+          "currency": { "type": "string" }
+        },
+        "required": ["txnDate", "accountId", "currency"]
+      },
+      "TransactionUpdate": {
+        "type": "object",
+        "properties": {
+          "txnDate": { "type": "string", "format": "date-time" },
+          "accountId": { "type": "integer" },
+          "departmentId": { "type": "integer", "nullable": true },
+          "costCenterId": { "type": "integer", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "debitAmount": { "type": "number", "format": "float" },
+          "creditAmount": { "type": "number", "format": "float" },
+          "currency": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "MonthlyPnlItem": {
+        "type": "object",
+        "properties": {
+          "month": { "type": "string", "example": "2025-01" },
+          "revenue": { "type": "number", "format": "float" },
+          "expense": { "type": "number", "format": "float" },
+          "net": { "type": "number", "format": "float" }
+        }
+      },
+      "CategorySpendItem": {
+        "type": "object",
+        "properties": {
+          "category": { "type": "string" },
+          "spend": { "type": "number", "format": "float" }
+        }
+      },
+      "BudgetVsActualItem": {
+        "type": "object",
+        "properties": {
+          "department_code": { "type": "string" },
+          "fiscal_year": { "type": "integer" },
+          "quarter": { "type": "integer" },
+          "budget_amount": { "type": "number", "format": "float" },
+          "forecast_amount": { "type": "number", "format": "float", "nullable": true },
+          "actual_amount": { "type": "number", "format": "float", "nullable": true },
+          "variance_amount": { "type": "number", "format": "float", "nullable": true }
+        }
+      },
+      "CashflowItem": {
+        "type": "object",
+        "properties": {
+          "month": { "type": "string", "example": "2025-01" },
+          "inflow": { "type": "number", "format": "float" },
+          "outflow": { "type": "number", "format": "float" },
+          "net": { "type": "number", "format": "float" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Login and get JWT",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuthLoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login success",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthLoginResponse" }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout (stateless)",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "204": { "description": "Logged out" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get current user",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Current user",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "List users in current organization",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Users",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/User" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create user",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created user",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "summary": "Get user by id",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "summary": "Update user",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete user",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "204": { "description": "Deleted" }
+        }
+      }
+    },
+    "/orgs/me": {
+      "get": {
+        "summary": "Get current organization",
+        "tags": ["Organizations"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Organization",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Organization" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orgs": {
+      "get": {
+        "summary": "List organizations",
+        "tags": ["Organizations"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Organizations",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Organization" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orgs/{id}": {
+      "get": {
+        "summary": "Get organization by id",
+        "tags": ["Organizations"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Organization" }
+              }
+            }
+          },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "summary": "Update organization",
+        "tags": ["Organizations"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OrganizationUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated organization",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Organization" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounts": {
+      "get": {
+        "summary": "List accounts",
+        "tags": ["Accounts"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Accounts",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Account" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create account",
+        "tags": ["Accounts"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AccountCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created account",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Account" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/accounts/{id}": {
+      "get": {
+        "summary": "Get account by id",
+        "tags": ["Accounts"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Account" }
+              }
+            }
+          },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "summary": "Update account",
+        "tags": ["Accounts"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AccountUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Account" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete account",
+        "tags": ["Accounts"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "204": { "description": "Deleted" }
+        }
+      }
+    },
+    "/transactions": {
+      "get": {
+        "summary": "List transactions",
+        "tags": ["Transactions"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "from", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "to", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "accountId", "in": "query", "schema": { "type": "integer" } },
+          { "name": "deptCode", "in": "query", "schema": { "type": "string" } },
+          { "name": "costCenterCode", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Transaction" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create transaction (draft)",
+        "tags": ["Transactions"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransactionCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Transaction" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions/{id}": {
+      "get": {
+        "summary": "Get transaction by id",
+        "tags": ["Transactions"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Transaction" }
+              }
+            }
+          },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "summary": "Update transaction",
+        "tags": ["Transactions"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransactionUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Transaction" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions/{id}/approve": {
+      "post": {
+        "summary": "Approve and post transaction",
+        "tags": ["Transactions"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Transaction" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/monthly-pnl": {
+      "get": {
+        "summary": "Monthly profit & loss",
+        "tags": ["Analytics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "year", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monthly P&L",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MonthlyPnlItem" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/category-spend": {
+      "get": {
+        "summary": "Category spend (expenses)",
+        "tags": ["Analytics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "from", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "to", "in": "query", "schema": { "type": "string", "format": "date-time" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category spend",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/CategorySpendItem" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/budget-vs-actual": {
+      "get": {
+        "summary": "Budget vs actual by department and quarter",
+        "tags": ["Analytics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "year", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Budget vs actual",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BudgetVsActualItem" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/cashflow": {
+      "get": {
+        "summary": "Cashflow over time",
+        "tags": ["Analytics"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "from", "in": "query", "schema": { "type": "string", "format": "date-time" } },
+          { "name": "to", "in": "query", "schema": { "type": "string", "format": "date-time" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cashflow",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/CashflowItem" } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
