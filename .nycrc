@@ -1,0 +1,10 @@
+{
+  "include": ["src/**/*.js"],
+  "exclude": [
+    "tests/**/*",
+    "src/db/*"
+  ],
+  "reporter": ["text"],
+  "report-dir": "coverage",
+  "check-coverage": false
+}
