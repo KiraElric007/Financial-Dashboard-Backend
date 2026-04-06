@@ -31,6 +31,12 @@ JWT_SECRET is hardcoded in env file for development purpose.
 
 ---
 
+```
+Note: I hereby declare that both "KiraElric007" and "Chanakyas-Chakravyuh" accounts belongs to me.
+```
+
+---
+
 The setup and running is explained in `/docs/QUICKSTART.md`
 
 The Folder structure is explained in `/docs/FOLDER_STRUCTURE.md`.
